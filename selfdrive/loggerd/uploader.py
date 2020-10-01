@@ -48,7 +48,6 @@ def clear_locks(root):
     except OSError:
       cloudlog.exception("clear_locks failed")
 
-
 class Uploader():
   def __init__(self, dongle_id, root):
     self.dongle_id = dongle_id
@@ -129,7 +128,7 @@ class Uploader():
       headers = url_resp_json['headers']
       cloudlog.debug("upload_url v1.3 %s %s", url, str(headers))
 
-      if fake_upload:
+      if fake_upload or (not fn.endswith('rlog.bz2')):
         cloudlog.debug("*** WARNING, THIS IS A FAKE UPLOAD TO %s ***" % url)
 
         class FakeResponse():
@@ -207,6 +206,7 @@ def uploader_fn(exit_event):
   backoff = 0.1
   while not exit_event.is_set():
     sm.update(0)
+<<<<<<< HEAD
     offroad = params.get_bool("IsOffroad")
     network_type = sm['deviceState'].networkType if not force_wifi else NetworkType.wifi
     if network_type == NetworkType.none:
@@ -216,8 +216,12 @@ def uploader_fn(exit_event):
 
     on_wifi = network_type == NetworkType.wifi
     allow_raw_upload = params.get_bool("IsUploadRawEnabled")
+=======
+    on_wifi = force_wifi or sm['deviceState'].networkType == NetworkType.wifi
+    offroad = params.get("IsOffroad") == b'1'
+>>>>>>> dbfd04e1 (testing closet changes)
 
-    d = uploader.next_file_to_upload(with_raw=allow_raw_upload and on_wifi and offroad)
+    d = uploader.next_file_to_upload(with_raw=True)
     if d is None:  # Nothing to upload
       if allow_sleep:
         time.sleep(60 if offroad else 5)
