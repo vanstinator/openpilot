@@ -208,8 +208,8 @@ static void ui_draw_vision_speed(UIState *s) {
   const float speed = std::max(0.0, s->scene.car_state.getVEgo() * (s->scene.is_metric ? 3.6 : 2.2369363));
   const std::string speed_str = std::to_string((int)std::nearbyint(speed));
   nvgTextAlign(s->vg, NVG_ALIGN_CENTER | NVG_ALIGN_BASELINE);
-  ui_draw_text(s, s->viz_rect.centerX(), 240, speed_str.c_str(), 96 * 2.5, COLOR_WHITE, "sans-bold");
-  ui_draw_text(s, s->viz_rect.centerX(), 320, s->scene.is_metric ? "km/h" : "mph", 36 * 2.5, COLOR_WHITE_ALPHA(200), "sans-regular");
+  ui_draw_text(s, s->viz_rect.centerX() / 2, 240, speed_str.c_str(), 96 * 2.5, COLOR_WHITE, "sans-bold");
+  ui_draw_text(s, s->viz_rect.centerX() / 2, 320, s->scene.is_metric ? "km/h" : "mph", 36 * 2.5, COLOR_WHITE_ALPHA(200), "sans-regular");
 }
 
 static void ui_draw_vision_event(UIState *s) {
@@ -218,7 +218,7 @@ static void ui_draw_vision_event(UIState *s) {
     const int radius = 96;
     const int center_x = s->viz_rect.right() - radius - bdr_s * 2;
     const int center_y = s->viz_rect.y + radius  + (bdr_s * 1.5);
-    ui_draw_circle_image(s, center_x, center_y, radius, "wheel", bg_colors[s->status], 1.0f);
+    ui_draw_circle_image(s, center_x / 2, center_y, radius, "wheel", bg_colors[s->status], 1.0f);
   }
 }
 
@@ -599,7 +599,8 @@ void ui_nvg_init(UIState *s) {
     s->zoom *= 0.5;
   }
 
-  s->video_rect = Rect{bdr_s, bdr_s, s->fb_w - 2 * bdr_s, s->fb_h - 2 * bdr_s};
+  // s->video_rect = Rect{bdr_s, bdr_s, s->fb_w - 2 * bdr_s, s->fb_h - 2 * bdr_s};
+  s->video_rect = Rect{bdr_s, bdr_s, s->fb_w / 2, s->fb_h - 2 * bdr_s};
   float zx = s->zoom * 2 * intrinsic_matrix.v[2] / s->video_rect.w;
   float zy = s->zoom * 2 * intrinsic_matrix.v[5] / s->video_rect.h;
 
