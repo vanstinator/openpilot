@@ -7,7 +7,6 @@ Item {
   width: 900
   height: 1020
 
-  property bool initialized: false
   property variant gpsLocation
   property variant carPosition: QtPositioning.coordinate()
   property real carBearing: 0
@@ -32,9 +31,10 @@ Item {
 
 
   onGpsLocationChanged: {
-    carPosition = QtPositioning.coordinate(gpsLocation.latitude, gpsLocation.longitude, gpsLocation.altitude)
-    carBearing = gpsLocation.bearingDeg
-    initialized = true
+    if (gpsLocation.valid) {
+      carPosition = QtPositioning.coordinate(gpsLocation.latitude, gpsLocation.longitude, gpsLocation.altitude)
+      carBearing = gpsLocation.bearingDeg
+    }
   }
 
   onCarPositionChanged: {
@@ -153,7 +153,7 @@ Item {
         map.bearing = lockedToNorth || !mapFollowsCar ? 0 : carBearing
       }
       Image {
-        source: "compass.svg"
+        source: "compass.png"
         rotation: map.bearing
         anchors.centerIn: parent
         anchors.verticalCenterOffset: 5

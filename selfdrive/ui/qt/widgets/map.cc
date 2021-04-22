@@ -69,6 +69,7 @@ void QtMap::updatePosition() {
     gpsLocation["longitude"] = pos.getValue()[1];
     gpsLocation["altitude"] = pos.getValue()[2];
     gpsLocation["bearingDeg"] = RAD2DEG(orientation.getValue()[2]);
+    gpsLocation["valid"] = location.getStatus() == cereal::LiveLocationKalman::Status::VALID;
 
     QQmlProperty::write(mapObject, "gpsLocation", QVariant::fromValue(gpsLocation));
   }
