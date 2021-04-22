@@ -174,7 +174,7 @@ Item {
           mapFollowsCar = !mapFollowsCar
           if (mapFollowsCar) {
             lockedToNorth = false
-            map.zoomLevel = 16
+            map.zoomLevel = 15
             map.center = carPosition
             map.bearing = carBearing
           }
