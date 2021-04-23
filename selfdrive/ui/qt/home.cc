@@ -22,6 +22,7 @@
 #include "widgets/drive_stats.hpp"
 #include "widgets/setup.hpp"
 #include "widgets/map.hpp"
+#include "widgets/map-native.hpp"
 
 #define BACKLIGHT_DT 0.25
 #define BACKLIGHT_TS 2.00
@@ -35,10 +36,13 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
 
   // onroad UI
   glWindow = new GLWindow(this);
-  map = new QtMap(this);
+  // map = new QtMap(this);
+  map = new QtMapNative(this);
 
   QWidget* onroadWidget = new QWidget();
   QHBoxLayout* onRoadLayout = new QHBoxLayout();
+  onRoadLayout->setContentsMargins(0, 0, 0, 0);
+  onRoadLayout->setSpacing(0);
   onRoadLayout->addWidget(glWindow);
   onRoadLayout->addWidget(map);
   onroadWidget->setLayout(onRoadLayout);
@@ -251,6 +255,7 @@ GLWindow::~GLWindow() {
 
 void GLWindow::initializeGL() {
   initializeOpenGLFunctions();
+  std::cout << "GLWindow:" << std::endl;
   std::cout << "OpenGL version: " << glGetString(GL_VERSION) << std::endl;
   std::cout << "OpenGL vendor: " << glGetString(GL_VENDOR) << std::endl;
   std::cout << "OpenGL renderer: " << glGetString(GL_RENDERER) << std::endl;
@@ -316,7 +321,7 @@ void GLWindow::timerUpdate() {
 }
 
 void GLWindow::resizeGL(int w, int h) {
-  std::cout << "resize " << w << "x" << h << std::endl;
+  std::cout << "resize camera " << w << "x" << h << std::endl;
 }
 
 void GLWindow::paintGL() {

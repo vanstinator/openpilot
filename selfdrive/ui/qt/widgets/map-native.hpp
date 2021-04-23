@@ -12,13 +12,13 @@
 #include "messaging.hpp"
 
 
-class QtMap : public QOpenGLWidget, protected QOpenGLFunctions {
+class QtMapNative : public QOpenGLWidget, protected QOpenGLFunctions {
   Q_OBJECT
 
 public:
   using QOpenGLWidget::QOpenGLWidget;
-  explicit QtMap(QWidget* parent = 0);
-  ~QtMap();
+  explicit QtMapNative(QWidget* parent = 0);
+  ~QtMapNative();
 
 private:
   void timerUpdate();
