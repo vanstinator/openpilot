@@ -37,7 +37,10 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
   // onroad UI
   glWindow = new GLWindow(this);
   // map = new QtMap(this);
-  map = new QtMapNative(this);
+  QMapboxGLSettings settings;
+  settings.setCacheDatabasePath("/tmp/mbgl-cache.db");
+  settings.setCacheDatabaseMaximumSize(20 * 1024 * 1024);
+  map = new MapWindow(settings);
 
   QWidget* onroadWidget = new QWidget();
   QHBoxLayout* onRoadLayout = new QHBoxLayout();

@@ -1,35 +1,58 @@
 #pragma once
 
-#include <QTimer>
-#include <QFrame>
-#include <QQuickItem>
-#include <QWidget>
-#include <QWidget>
-#include <QTimer>
+#include <QMapboxGL>
+
 #include <QOpenGLWidget>
-#include <QOpenGLFunctions>
+#include <QPropertyAnimation>
+#include <QScopedPointer>
+#include <QtGlobal>
 
-#include "messaging.hpp"
+class QKeyEvent;
+class QMouseEvent;
+class QWheelEvent;
 
-
-class QtMapNative : public QOpenGLWidget, protected QOpenGLFunctions {
-  Q_OBJECT
+class MapWindow : public QOpenGLWidget
+{
+    Q_OBJECT
 
 public:
-  using QOpenGLWidget::QOpenGLWidget;
-  explicit QtMapNative(QWidget* parent = 0);
-  ~QtMapNative();
+    MapWindow(const QMapboxGLSettings &);
+    ~MapWindow();
+
+    void selfTest();
+
+protected slots:
+    void animationValueChanged();
+    void animationFinished();
 
 private:
-  void timerUpdate();
-  bool initialized = false;
-  SubMaster *sm;
-  QTimer* timer;
-  int width = 0;
-  int height = 0;
+    void changeStyle();
+    qreal pixelRatio();
 
-  void updatePosition();
-  void initializeGL() override;
-  void resizeGL(int w, int h) override;
-  void paintGL() override;
+    // QWidget implementation.
+    void keyPressEvent(QKeyEvent *ev) final;
+    void mousePressEvent(QMouseEvent *ev) final;
+    void mouseMoveEvent(QMouseEvent *ev) final;
+    void wheelEvent(QWheelEvent *ev) final;
+
+    // Q{,Open}GLWidget implementation.
+    void initializeGL() final;
+    void paintGL() final;
+
+    QPointF m_lastPos;
+
+    QMapboxGLSettings m_settings;
+    QScopedPointer<QMapboxGL> m_map;
+
+    QPropertyAnimation *m_bearingAnimation;
+    QPropertyAnimation *m_zoomAnimation;
+
+    unsigned m_animationTicks = 0;
+    unsigned m_frameDraws = 0;
+
+    QVariant m_symbolAnnotationId;
+    QVariant m_lineAnnotationId;
+    QVariant m_fillAnnotationId;
+
+    bool m_sourceAdded = false;
 };
