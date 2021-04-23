@@ -34,22 +34,19 @@ void MapWindow::timerUpdate() {
   repaint();
 }
 
-qreal MapWindow::pixelRatio() {
-    return devicePixelRatioF();
-}
-
 void MapWindow::initializeGL() {
-  m_map.reset(new QMapboxGL(nullptr, m_settings, size(), pixelRatio()));
+  m_map.reset(new QMapboxGL(nullptr, m_settings, size(), 1));
   connect(m_map.data(), SIGNAL(needsRendering()), this, SLOT(update()));
 
-  // Set default location to Helsinki.
   m_map->setCoordinateZoom(QMapbox::Coordinate(60.170448, 24.942046), 17);
-  m_map->setStyleUrl("mapbox://styles/mapbox/navigation-night-v1");
+
+  // m_map->setStyleUrl("mapbox://styles/mapbox/navigation-night-v1");
+  m_map->setStyleUrl("mapbox://styles/pd0wm/cknuhcgvr0vs817o1akcx6pek"); // Larger fonts
   timer->start(50);
 }
 
 void MapWindow::paintGL() {
   m_map->resize(size());
-  m_map->setFramebufferObject(defaultFramebufferObject(), size() * pixelRatio());
+  m_map->setFramebufferObject(defaultFramebufferObject(), size());
   m_map->render();
 }

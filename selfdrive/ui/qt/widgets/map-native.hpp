@@ -20,8 +20,6 @@ public:
 
 
 private:
-  qreal pixelRatio();
-
   void initializeGL() final;
   void paintGL() final;
   QPointF m_lastPos;
