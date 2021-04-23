@@ -35,20 +35,19 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
 
   // onroad UI
   glWindow = new GLWindow(this);
-  layout->addWidget(glWindow);
+  map = new QtMap(this);
+
+  QWidget* onroadWidget = new QWidget();
+  QHBoxLayout* onRoadLayout = new QHBoxLayout();
+  onRoadLayout->addWidget(glWindow);
+  onRoadLayout->addWidget(map);
+  onroadWidget->setLayout(onRoadLayout);
+
+  layout->addWidget(onroadWidget);
 
   // draw offroad UI on top of onroad UI
   home = new OffroadHome();
   layout->addWidget(home);
-
-  // Map
-  map = new QtMap(this);
-  QFrame* mapContainer = new QFrame();
-  QVBoxLayout* mapContainerLayout = new QVBoxLayout(mapContainer);
-  mapContainerLayout->addWidget(map, 0, Qt::AlignRight | Qt::AlignBottom);
-  mapContainerLayout->setContentsMargins(0, 0, 30, 30);
-  layout->addWidget(mapContainer);
-  layout->setCurrentWidget(mapContainer);
 
   QObject::connect(glWindow, SIGNAL(offroadTransition(bool)), home, SLOT(setVisible(bool)));
   QObject::connect(glWindow, SIGNAL(offroadTransition(bool)), this, SIGNAL(offroadTransition(bool)));
