@@ -1,6 +1,7 @@
 #include <cmath>
 
 #include "map.hpp"
+#include "common/util.h"
 
 #include <QDebug>
 #include <QString>
@@ -54,12 +55,19 @@ void MapWindow::timerUpdate() {
     auto pos = location.getPositionGeodetic();
     auto orientation = location.getOrientationNED();
 
+    float velocity = location.getVelocityCalibrated().getValue()[0];
+    static FirstOrderFilter velocity_filter(velocity, 30, 0.1);
+
     auto coordinate = QMapbox::Coordinate(pos.getValue()[0], pos.getValue()[1]);
 
     if (location.getStatus() == cereal::LiveLocationKalman::Status::VALID){
       m_map->setCoordinate(coordinate);
       m_map->setBearing(RAD2DEG(orientation.getValue()[2]));
 
+      // Scale zoom between 16 and 19 based on speed
+      m_map->setZoom(19 - std::min(3.0f, velocity_filter.update(velocity) / 10));
+
+      // Update current location marker
       auto point = coordinate_to_collection(coordinate);
       QMapbox::Feature feature(QMapbox::Feature::PointType, point, {}, {});
       QVariantMap circleSource;
@@ -75,11 +83,12 @@ void MapWindow::timerUpdate() {
 void MapWindow::initializeGL() {
   m_map.reset(new QMapboxGL(nullptr, m_settings, size(), 1));
 
-  m_map->setCoordinateZoom(QMapbox::Coordinate(37.7393118509158, -122.46471285025565), 17);
-  // m_map->setStyleUrl("mapbox://styles/mapbox/navigation-night-v1");
+  // Get from last gps position param
+  auto coordinate = QMapbox::Coordinate(37.7393118509158, -122.46471285025565);
+  m_map->setCoordinateZoom(coordinate, 16);
   m_map->setStyleUrl("mapbox://styles/pd0wm/cknuhcgvr0vs817o1akcx6pek"); // Larger fonts
 
-  // connect(m_map.data(), SIGNAL(needsRendering()), this, SLOT(update()));
+  connect(m_map.data(), SIGNAL(needsRendering()), this, SLOT(update()));
   timer->start(50);
 }
 
