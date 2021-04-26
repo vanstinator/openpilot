@@ -22,7 +22,6 @@
 #include "widgets/drive_stats.hpp"
 #include "widgets/setup.hpp"
 #include "widgets/map.hpp"
-#include "widgets/map-native.hpp"
 
 #define BACKLIGHT_DT 0.25
 #define BACKLIGHT_TS 2.00

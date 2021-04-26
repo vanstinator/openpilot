@@ -1,76 +1,52 @@
-#include <cassert>
 #include <cmath>
 
-#include <QDateTime>
-#include <QGeoCoordinate>
-#include <QQmlContext>
-#include <QQmlProperty>
-#include <QQuickWidget>
-#include <QQuickView>
-#include <QStackedLayout>
-#include <QVariant>
-
-#include "common/params.h"
-#include "common/util.h"
 #include "map.hpp"
+
+#include <QDebug>
+#include <QString>
 
 #define RAD2DEG(x) ((x) * 180.0 / M_PI)
 
-
-QtMap::QtMap(QWidget *parent) : QFrame(parent) {
-  QStackedLayout* layout = new QStackedLayout();
-
-  QString mapboxAccessToken = QString::fromStdString(Params().get("MapboxToken"));
-
-  // might have to use QQuickWidget for proper stacking?
-  QQuickWidget *map = new QQuickWidget();
-  map->rootContext()->setContextProperty("mapboxAccessToken", mapboxAccessToken);
-  map->rootContext()->setContextProperty("isRHD", Params().getBool("IsRHD"));
-  map->setSource(QUrl::fromLocalFile("qt/widgets/map.qml"));
-  mapObject = map->rootObject();
-  QSize size = map->size();
-
-  QSizeF scaledSize = mapObject->size() * mapObject->scale();
-  qDebug() << "size" << size;
-  qDebug() << "scaledSize" << scaledSize;
-  qDebug() << "mapObject->scale()" << mapObject->scale();
-  map->setFixedSize(scaledSize.toSize());
-  setFixedSize(scaledSize.toSize());
-
-  layout->addWidget(map);
-  setLayout(layout);
-
-  // Start polling loop
+MapWindow::MapWindow(const QMapboxGLSettings &settings) : m_settings(settings) {
   sm = new SubMaster({"liveLocationKalman"});
-  timer.start(100, this); // 10Hz
+
+  qDebug() << "init";
+  timer = new QTimer(this);
+  QObject::connect(timer, SIGNAL(timeout()), this, SLOT(timerUpdate()));
 }
 
-void QtMap::timerEvent(QTimerEvent *event) {
-  if (!event)
-    return;
-
-  if (event->timerId() == timer.timerId()) {
-    if (isVisible())
-      updatePosition();
-  }
-  else
-    QObject::timerEvent(event);
+MapWindow::~MapWindow() {
+  makeCurrent();
 }
 
-void QtMap::updatePosition() {
+void MapWindow::timerUpdate() {
   sm->update(0);
   if (sm->updated("liveLocationKalman")) {
     auto location = (*sm)["liveLocationKalman"].getLiveLocationKalman();
     auto pos = location.getPositionGeodetic();
     auto orientation = location.getOrientationNED();
 
-    QVariantMap gpsLocation;
-    gpsLocation["latitude"] = pos.getValue()[0];
-    gpsLocation["longitude"] = pos.getValue()[1];
-    gpsLocation["altitude"] = pos.getValue()[2];
-    gpsLocation["bearingDeg"] = RAD2DEG(orientation.getValue()[2]);
-    gpsLocation["valid"] = location.getStatus() == cereal::LiveLocationKalman::Status::VALID;
-
-    QQmlProperty::write(mapObject, "gpsLocation", QVariant::fromValue(gpsLocation));
+    if (location.getStatus() == cereal::LiveLocationKalman::Status::VALID){
+      m_map->setCoordinate(QMapbox::Coordinate(pos.getValue()[0], pos.getValue()[1]));
+      m_map->setBearing(RAD2DEG(orientation.getValue()[2]));
+    }
   }
+  update();
+}
+
+void MapWindow::initializeGL() {
+  m_map.reset(new QMapboxGL(nullptr, m_settings, size(), 1));
+  connect(m_map.data(), SIGNAL(needsRendering()), this, SLOT(update()));
+
+  m_map->setCoordinateZoom(QMapbox::Coordinate(37.7393118509158, -122.46471285025565), 17);
+
+  // m_map->setStyleUrl("mapbox://styles/mapbox/navigation-night-v1");
+  m_map->setStyleUrl("mapbox://styles/pd0wm/cknuhcgvr0vs817o1akcx6pek"); // Larger fonts
+  timer->start(100);
+}
+
+void MapWindow::paintGL() {
+  m_map->resize(size());
+  m_map->setFramebufferObject(defaultFramebufferObject(), size());
+  m_map->render();
 }
