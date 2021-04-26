@@ -10,6 +10,7 @@
 #include <QString>
 
 #define RAD2DEG(x) ((x) * 180.0 / M_PI)
+const int PAN_TIMEOUT = 100;
 
 QMapbox::CoordinatesCollections model_to_collection(
   const cereal::LiveLocationKalman::Measurement::Reader &calibratedOrientationECEF,
@@ -101,11 +102,14 @@ void MapWindow::timerUpdate() {
     auto coordinate = QMapbox::Coordinate(pos.getValue()[0], pos.getValue()[1]);
 
     if (location.getStatus() == cereal::LiveLocationKalman::Status::VALID){
-      m_map->setCoordinate(coordinate);
-      m_map->setBearing(RAD2DEG(orientation.getValue()[2]));
 
-      // Scale zoom between 16 and 19 based on speed
-      m_map->setZoom(19 - std::min(3.0f, velocity_filter.update(velocity) / 10));
+      if (pan_counter == 0){
+        m_map->setCoordinate(coordinate);
+        m_map->setBearing(RAD2DEG(orientation.getValue()[2]));
+        m_map->setZoom(19 - std::min(3.0f, velocity_filter.update(velocity) / 10)); // Scale zoom between 16 and 19 based on speed
+      } else {
+        pan_counter--;
+      }
 
       // Update current location marker
       auto point = coordinate_to_collection(coordinate);
@@ -144,4 +148,21 @@ void MapWindow::paintGL() {
   m_map->resize(size());
   m_map->setFramebufferObject(defaultFramebufferObject(), size());
   m_map->render();
+}
+
+void MapWindow::mousePressEvent(QMouseEvent *ev) {
+  m_lastPos = ev->localPos();
+  ev->accept();
+}
+
+void MapWindow::mouseMoveEvent(QMouseEvent *ev){
+  QPointF delta = ev->localPos() - m_lastPos;
+
+  if (!delta.isNull()) {
+    pan_counter = PAN_TIMEOUT;
+    m_map->moveBy(delta);
+  }
+
+  m_lastPos = ev->localPos();
+  ev->accept();
 }
