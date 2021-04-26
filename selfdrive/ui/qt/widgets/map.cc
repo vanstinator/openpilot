@@ -25,10 +25,6 @@ MapWindow::MapWindow(const QMapboxGLSettings &settings) : m_settings(settings) {
 
   timer = new QTimer(this);
   QObject::connect(timer, SIGNAL(timeout()), this, SLOT(timerUpdate()));
-
-  // auto img = new QImage("qt/widgets/location-night.png");
-  // m_map->addImage("label-arrow", img);
-
 }
 
 MapWindow::~MapWindow() {

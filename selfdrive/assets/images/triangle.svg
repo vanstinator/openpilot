@@ -9,9 +9,9 @@
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    version="1.1"
    id="triangle-11"
-   width="34.980434"
-   height="33.143906"
-   viewBox="0 0 34.980434 33.143906"
+   width="37.669861"
+   height="44.330353"
+   viewBox="0 0 37.669861 44.330354"
    sodipodi:docname="triangle.svg"
    inkscape:version="0.92.5 (2060ec1f9f, 2020-04-08)">
   <metadata
@@ -36,20 +36,21 @@
      guidetolerance="10"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:window-width="1278"
+     inkscape:window-width="2558"
      inkscape:window-height="1418"
      id="namedview4"
      showgrid="false"
-     inkscape:zoom="7.5853273"
-     inkscape:cx="4.08215"
-     inkscape:cy="-6.6467049"
-     inkscape:window-x="2480"
+     inkscape:zoom="21.454545"
+     inkscape:cx="20.795012"
+     inkscape:cy="16.945056"
+     inkscape:window-x="1200"
      inkscape:window-y="0"
      inkscape:window-maximized="0"
      inkscape:current-layer="triangle-11" />
   <path
      id="rect3338"
-     d="m 17.55701,0.00113329 c -0.771953,-0.02645 -1.496306,0.411699 -1.89399,1.14550301 L 0.30841987,29.559359 c -0.854867,1.576399 0.168518,3.584121 1.82719803,3.584548 H 32.844817 c 1.65868,-4.33e-4 2.682064,-2.008149 1.827198,-3.584548 L 19.317415,1.1466363 C 18.943914,0.45805429 18.280979,0.02673129 17.55701,0.00113329 Z"
+     d="m 18.899367,0.00151578 c -0.831637,-0.035377 -1.611991,0.550652 -2.040423,1.53212302 L 0.31722249,39.535972 c -0.9209601,2.108452 0.2938631,4.783067 1.96846551,4.794373 1.6746026,0.01137 13.99606,-12.1226 16.861282,-12.1226 2.86522,0 14.890414,12.122745 16.222162,12.1226 1.331747,-1.44e-4 1.615814,-0.67177 1.999688,-1.606734 0.383869,-0.934965 0.429256,-2.133414 -0.03123,-3.187639 L 29.066737,20.534806 20.795876,1.5336388 C 20.393497,0.61265268 19.679308,0.03575338 18.899367,0.00151578 Z"
      inkscape:connector-curvature="0"
-     style="stroke-width:4.04683113" />
+     style="fill:#cccccc;stroke-width:4.85774708"
+     sodipodi:nodetypes="ccczzzscccc" />
 </svg>
