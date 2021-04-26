@@ -7,6 +7,7 @@
 #include <QScopedPointer>
 #include <QtGlobal>
 #include <QMouseEvent>
+#include <QWheelEvent>
 #include <QTimer>
 
 #include "messaging.hpp"
@@ -28,6 +29,8 @@ private:
   QScopedPointer<QMapboxGL> m_map;
   void mousePressEvent(QMouseEvent *ev) final;
   void mouseMoveEvent(QMouseEvent *ev) final;
+  void wheelEvent(QWheelEvent *ev) final;
+
 
   bool m_sourceAdded = false;
   SubMaster *sm;
@@ -36,6 +39,7 @@ private:
   // Panning
   QPointF m_lastPos;
   int pan_counter = 0;
+  int zoom_counter = 0;
 
 private slots:
   void timerUpdate();

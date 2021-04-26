@@ -106,9 +106,14 @@ void MapWindow::timerUpdate() {
       if (pan_counter == 0){
         m_map->setCoordinate(coordinate);
         m_map->setBearing(RAD2DEG(orientation.getValue()[2]));
-        m_map->setZoom(19 - std::min(3.0f, velocity_filter.update(velocity) / 10)); // Scale zoom between 16 and 19 based on speed
       } else {
         pan_counter--;
+      }
+
+      if (zoom_counter == 0){
+        m_map->setZoom(19 - std::min(3.0f, velocity_filter.update(velocity) / 10)); // Scale zoom between 16 and 19 based on speed
+      } else {
+        zoom_counter--;
       }
 
       // Update current location marker
@@ -164,5 +169,20 @@ void MapWindow::mouseMoveEvent(QMouseEvent *ev){
   }
 
   m_lastPos = ev->localPos();
+  ev->accept();
+}
+
+void MapWindow::wheelEvent(QWheelEvent *ev) {
+  if (ev->orientation() == Qt::Horizontal) {
+      return;
+  }
+
+  float factor = ev->delta() / 1200.;
+  if (ev->delta() < 0) {
+      factor = factor > -1 ? factor : 1 / factor;
+  }
+
+  m_map->scaleBy(1 + factor, ev->pos());
+  zoom_counter = PAN_TIMEOUT;
   ev->accept();
 }
