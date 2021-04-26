@@ -50,14 +50,7 @@ sudo apt-get update && sudo apt-get install -y --no-install-recommends \
     sudo \
     vim \
     wget \
-    gcc-arm-none-eabi \
-    qtlocation5-dev \
-    qtpositioning5-dev \
-    qtdeclarative5-dev \
-    libqt5location5-plugin-mapboxgl \
-    qml-module-qtlocation \
-    qml-module-qtpositioning \
-    qml-module-qtquick-window2 \
+    gcc-arm-none-eabi
 
 # install git lfs
 if ! command -v "git-lfs" > /dev/null 2>&1; then

@@ -10,7 +10,6 @@
 MapWindow::MapWindow(const QMapboxGLSettings &settings) : m_settings(settings) {
   sm = new SubMaster({"liveLocationKalman"});
 
-  qDebug() << "init";
   timer = new QTimer(this);
   QObject::connect(timer, SIGNAL(timeout()), this, SLOT(timerUpdate()));
 }

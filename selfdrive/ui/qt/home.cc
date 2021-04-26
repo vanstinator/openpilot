@@ -33,14 +33,18 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
   layout = new QStackedLayout();
   layout->setStackingMode(QStackedLayout::StackAll);
 
-  // onroad UI
+  // Camera view
   glWindow = new GLWindow(this);
-  // map = new QtMap(this);
+
+  // Map
+  QString token = QString::fromStdString(Params().get("MapboxToken"));
   QMapboxGLSettings settings;
   settings.setCacheDatabasePath("/tmp/mbgl-cache.db");
   settings.setCacheDatabaseMaximumSize(20 * 1024 * 1024);
+  settings.setAccessToken(token);
   map = new MapWindow(settings);
 
+  // Put camera and map side by side
   QWidget* onroadWidget = new QWidget();
   QHBoxLayout* onRoadLayout = new QHBoxLayout();
   onRoadLayout->setContentsMargins(0, 0, 0, 0);
