@@ -89,7 +89,7 @@ void MapWindow::initializeGL() {
   m_map->setStyleUrl("mapbox://styles/pd0wm/cknuhcgvr0vs817o1akcx6pek"); // Larger fonts
 
   connect(m_map.data(), SIGNAL(needsRendering()), this, SLOT(update()));
-  timer->start(50);
+  timer->start(100);
 }
 
 void MapWindow::paintGL() {
