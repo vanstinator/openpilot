@@ -208,6 +208,8 @@ bool MapWindow::gestureEvent(QGestureEvent *event) {
 void MapWindow::pinchTriggered(QPinchGesture *gesture) {
   QPinchGesture::ChangeFlags changeFlags = gesture->changeFlags();
   if (changeFlags & QPinchGesture::ScaleFactorChanged) {
-    qDebug() << "pinchTriggered(): zoom by" << gesture->scaleFactor() << "->" << gesture->totalScaleFactor();
+    // TODO: figure out why gesture centerPoint doesn't work
+    m_map->scaleBy(gesture->scaleFactor(), {width() / 2.0, height() / 2.0});
+    zoom_counter = PAN_TIMEOUT;
   }
 }
