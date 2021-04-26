@@ -8,6 +8,7 @@
 #include <QtGlobal>
 #include <QMouseEvent>
 #include <QWheelEvent>
+#include <QGestureEvent>
 #include <QTimer>
 
 #include "messaging.hpp"
@@ -30,6 +31,10 @@ private:
   void mousePressEvent(QMouseEvent *ev) final;
   void mouseMoveEvent(QMouseEvent *ev) final;
   void wheelEvent(QWheelEvent *ev) final;
+  bool event(QEvent *event) final;
+  bool gestureEvent(QGestureEvent *event);
+  void pinchTriggered(QPinchGesture *gesture);
+
 
 
   bool m_sourceAdded = false;

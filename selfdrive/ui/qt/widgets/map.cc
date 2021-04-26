@@ -57,6 +57,8 @@ MapWindow::MapWindow(const QMapboxGLSettings &settings) : m_settings(settings) {
 
   timer = new QTimer(this);
   QObject::connect(timer, SIGNAL(timeout()), this, SLOT(timerUpdate()));
+
+  grabGesture(Qt::GestureType::PinchGesture);
 }
 
 MapWindow::~MapWindow() {
@@ -185,4 +187,27 @@ void MapWindow::wheelEvent(QWheelEvent *ev) {
   m_map->scaleBy(1 + factor, ev->pos());
   zoom_counter = PAN_TIMEOUT;
   ev->accept();
+}
+
+bool MapWindow::event(QEvent *event)
+{
+  if (event->type() == QEvent::Gesture){
+    return gestureEvent(static_cast<QGestureEvent*>(event));
+  }
+
+  return QWidget::event(event);
+}
+
+bool MapWindow::gestureEvent(QGestureEvent *event) {
+  if (QGesture *pinch = event->gesture(Qt::PinchGesture)){
+    pinchTriggered(static_cast<QPinchGesture *>(pinch));
+  }
+  return true;
+}
+
+void MapWindow::pinchTriggered(QPinchGesture *gesture) {
+  QPinchGesture::ChangeFlags changeFlags = gesture->changeFlags();
+  if (changeFlags & QPinchGesture::ScaleFactorChanged) {
+    qDebug() << "pinchTriggered(): zoom by" << gesture->scaleFactor() << "->" << gesture->totalScaleFactor();
+  }
 }
