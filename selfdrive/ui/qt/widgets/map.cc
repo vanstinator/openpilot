@@ -1,12 +1,43 @@
 #include <cmath>
+#include <eigen3/Eigen/Dense>
 
 #include "map.hpp"
 #include "common/util.h"
+#include "common/transformations/coordinates.hpp"
+#include "common/transformations/orientation.hpp"
 
 #include <QDebug>
 #include <QString>
 
 #define RAD2DEG(x) ((x) * 180.0 / M_PI)
+
+QMapbox::CoordinatesCollections model_to_collection(
+  const cereal::LiveLocationKalman::Measurement::Reader &calibratedOrientationECEF,
+  const cereal::LiveLocationKalman::Measurement::Reader &positionECEF,
+  const cereal::ModelDataV2::XYZTData::Reader &line){
+
+  Eigen::Vector3d ecef(positionECEF.getValue()[0], positionECEF.getValue()[1], positionECEF.getValue()[2]);
+  Eigen::Vector3d orient(calibratedOrientationECEF.getValue()[0], calibratedOrientationECEF.getValue()[1], calibratedOrientationECEF.getValue()[2]);
+  Eigen::Matrix3d ecef_from_local = euler2rot(orient).transpose();
+
+  QMapbox::Coordinates coordinates;
+  auto x = line.getX();
+  auto y = line.getY();
+  auto z = line.getZ();
+  for (int i = 0; i < x.size(); i++){
+    Eigen::Vector3d point_ecef = ecef_from_local * Eigen::Vector3d(x[i], y[i], z[i]) + ecef;
+    Geodetic point_geodetic = ecef2geodetic((ECEF){.x = point_ecef[0], .y = point_ecef[1], .z = point_ecef[2]});
+    QMapbox::Coordinate coordinate(point_geodetic.lat, point_geodetic.lon);
+    coordinates.push_back(coordinate);
+  }
+
+  QMapbox::CoordinatesCollection collection;
+  collection.push_back(coordinates);
+
+  QMapbox::CoordinatesCollections collections;
+  collections.push_back(collection);
+  return collections;
+}
 
 QMapbox::CoordinatesCollections coordinate_to_collection(QMapbox::Coordinate c){
   QMapbox::Coordinates coordinates;
@@ -15,13 +46,13 @@ QMapbox::CoordinatesCollections coordinate_to_collection(QMapbox::Coordinate c){
   QMapbox::CoordinatesCollection collection;
   collection.push_back(coordinates);
 
-  QMapbox::CoordinatesCollections point;
-  point.push_back(collection);
-  return point;
+  QMapbox::CoordinatesCollections collections;
+  collections.push_back(collection);
+  return collections;
 }
 
 MapWindow::MapWindow(const QMapboxGLSettings &settings) : m_settings(settings) {
-  sm = new SubMaster({"liveLocationKalman"});
+  sm = new SubMaster({"liveLocationKalman", "modelV2"});
 
   timer = new QTimer(this);
   QObject::connect(timer, SIGNAL(timeout()), this, SLOT(timerUpdate()));
@@ -33,20 +64,33 @@ MapWindow::~MapWindow() {
 
 void MapWindow::timerUpdate() {
   // This doesn't work from initializeGL
-  if (!m_map->layerExists("circleLayer")){
+  if (!m_map->layerExists("modelPathLayer")){
     m_map->addImage("label-arrow", QImage("../assets/images/triangle.svg"));
 
-    QVariantMap circle;
-    circle["id"] = "circleLayer";
-    circle["type"] = "symbol";
-    circle["source"] = "circleSource";
-    m_map->addLayer(circle);
-    m_map->setLayoutProperty("circleLayer", "icon-image", "label-arrow");
-    m_map->setLayoutProperty("circleLayer", "icon-ignore-placement", true);
+    QVariantMap modelPath;
+    modelPath["id"] = "modelPathLayer";
+    modelPath["type"] = "line";
+    modelPath["source"] = "modelPathSource";
+    m_map->addLayer(modelPath);
+    m_map->setPaintProperty("modelPathLayer", "line-color", QColor("red"));
+    m_map->setPaintProperty("modelPathLayer", "line-width", 5.0);
+    m_map->setLayoutProperty("modelPathLayer", "line-cap", "round");
+  }
+  if (!m_map->layerExists("carPosLayer")){
+    m_map->addImage("label-arrow", QImage("../assets/images/triangle.svg"));
+
+    QVariantMap carPos;
+    carPos["id"] = "carPosLayer";
+    carPos["type"] = "symbol";
+    carPos["source"] = "carPosSource";
+    m_map->addLayer(carPos);
+    m_map->setLayoutProperty("carPosLayer", "icon-image", "label-arrow");
+    m_map->setLayoutProperty("carPosLayer", "icon-ignore-placement", true);
   }
 
   sm->update(0);
   if (sm->updated("liveLocationKalman")) {
+    auto model = (*sm)["modelV2"].getModelV2();
     auto location = (*sm)["liveLocationKalman"].getLiveLocationKalman();
     auto pos = location.getPositionGeodetic();
     auto orientation = location.getOrientationNED();
@@ -65,11 +109,19 @@ void MapWindow::timerUpdate() {
 
       // Update current location marker
       auto point = coordinate_to_collection(coordinate);
-      QMapbox::Feature feature(QMapbox::Feature::PointType, point, {}, {});
-      QVariantMap circleSource;
-      circleSource["type"] = "geojson";
-      circleSource["data"] = QVariant::fromValue<QMapbox::Feature>(feature);
-      m_map->updateSource("circleSource", circleSource);
+      QMapbox::Feature feature1(QMapbox::Feature::PointType, point, {}, {});
+      QVariantMap carPosSource;
+      carPosSource["type"] = "geojson";
+      carPosSource["data"] = QVariant::fromValue<QMapbox::Feature>(feature1);
+      m_map->updateSource("carPosSource", carPosSource);
+
+      // Update model path
+      auto path_points = model_to_collection(location.getCalibratedOrientationECEF(), location.getPositionECEF(), model.getPosition());
+      QMapbox::Feature feature2(QMapbox::Feature::LineStringType, path_points, {}, {});
+      QVariantMap modelPathSource;
+      modelPathSource["type"] = "geojson";
+      modelPathSource["data"] = QVariant::fromValue<QMapbox::Feature>(feature2);
+      m_map->updateSource("modelPathSource", modelPathSource);
     }
     update();
   }
