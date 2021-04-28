@@ -368,7 +368,7 @@ void MapInstructions::updateInstructions(float distance, QString text){
     setFixedWidth(width());
     QHBoxLayout *layout = new QHBoxLayout;
     instruction = new QLabel;
-    instruction->setStyleSheet(R"(font-size: 35px;)");
+    instruction->setStyleSheet(R"(font-size: 40px;)");
     layout->addWidget(instruction);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
@@ -385,10 +385,10 @@ void MapInstructions::updateInstructions(float distance, QString text){
   QString distance_str;
   if (distance * METER_2_MILE > 0.1){
     distance_str.setNum(distance * METER_2_MILE, 'g', 1);
-    distance_str += " miles, ";
+    distance_str += " miles,\n  ";
   } else {
     distance_str.setNum(distance * METER_2_FOOT, 'g', 0);
-    distance_str += " ft, ";
+    distance_str += " ft,\n  ";
   }
 
   instruction->setText("  In " + distance_str + text);
