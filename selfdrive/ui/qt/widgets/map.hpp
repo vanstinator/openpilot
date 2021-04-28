@@ -14,6 +14,8 @@
 #include <QGeoServiceProvider>
 #include <QGeoRoutingManager>
 #include <QGeoCoordinate>
+#include <QGeoRouteSegment>
+#include <QGeoManeuver>
 
 #include "messaging.hpp"
 
@@ -50,10 +52,13 @@ private:
   int zoom_counter = 0;
 
   // Route
+  bool has_route = false;
   QGeoServiceProvider *geoservice_provider;
   QGeoRoutingManager *routing_manager;
   QGeoRoute route;
+  QGeoRouteSegment segment;
   QMapbox::Coordinate last_position = QMapbox::Coordinate(37.7393118509158, -122.46471285025565);
+  double last_maneuver_distance = 1000;
   void calculateRoute(QMapbox::Coordinate destination);
   bool shouldRecompute();
 

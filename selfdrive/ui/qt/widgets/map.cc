@@ -13,6 +13,7 @@
 #define RAD2DEG(x) ((x) * 180.0 / M_PI)
 const int PAN_TIMEOUT = 100;
 const bool DRAW_MODEL_PATH = false;
+const qreal REROUTE_DISTANCE = 100;
 
 // TODO: get from param
 QMapbox::Coordinate nav_destination(32.71565912901338, -117.16380347622167);
@@ -155,6 +156,24 @@ void MapWindow::timerUpdate() {
         calculateRoute(nav_destination);
       }
 
+      if (segment.isValid()) {
+        auto next_segment = segment.nextRouteSegment();
+        if (next_segment.isValid()){
+          auto maneuver = next_segment.maneuver();
+          if (maneuver.isValid()){
+            float maneuver_distance = maneuver.position().distanceTo(to_QGeoCoordinate(last_position));
+
+            qDebug() << maneuver_distance << maneuver.instructionText() << maneuver.direction();
+            if (maneuver_distance < REROUTE_DISTANCE && maneuver_distance > last_maneuver_distance){
+              segment = next_segment;
+            }
+            last_maneuver_distance = maneuver_distance;
+          }
+        } else {
+          qDebug() << "End of route";
+        }
+      }
+
       if (pan_counter == 0){
         m_map->setCoordinate(coordinate);
         m_map->setBearing(RAD2DEG(orientation.getValue()[2]));
@@ -219,6 +238,7 @@ void MapWindow::routeCalculated(QGeoRouteReply *reply) {
   qDebug() << "route update";
   if (reply->routes().size() != 0) {
     route = reply->routes().at(0);
+    segment = route.firstRouteSegment();
 
     auto route_points = coordinate_list_to_collection(route.path());
     QMapbox::Feature feature(QMapbox::Feature::LineStringType, route_points, {}, {});
@@ -226,23 +246,58 @@ void MapWindow::routeCalculated(QGeoRouteReply *reply) {
     navSource["type"] = "geojson";
     navSource["data"] = QVariant::fromValue<QMapbox::Feature>(feature);
     m_map->updateSource("navSource", navSource);
+    has_route = true;
   }
 
   reply->deleteLater();
 }
 
+
+// TODO: put in helper file
+static QGeoCoordinate sub(QGeoCoordinate v, QGeoCoordinate w){
+  return QGeoCoordinate(v.latitude() - w.latitude(), v.longitude() - w.longitude());
+}
+
+static QGeoCoordinate add(QGeoCoordinate v, QGeoCoordinate w){
+  return QGeoCoordinate(v.latitude() + w.latitude(), v.longitude() + w.longitude());
+}
+
+static QGeoCoordinate mul(QGeoCoordinate v, float c){
+  return QGeoCoordinate(c * v.latitude(), c * v.longitude());
+}
+
+static float dot(QGeoCoordinate v, QGeoCoordinate w){
+  return v.latitude() * w.latitude() + v.longitude() * w.longitude();
+
+}
+
+static float minimum_distance(QGeoCoordinate a, QGeoCoordinate b, QGeoCoordinate p) {
+  const QGeoCoordinate ap = sub(p, a);
+  const QGeoCoordinate ab = sub(b, a);
+  const float t = std::clamp(dot(ap, ab) / dot(ab, ab), 0.0f, 1.0f);
+  const QGeoCoordinate projection = add(a, mul(ab, t));
+  return projection.distanceTo(p);
+}
+
 bool MapWindow::shouldRecompute(){
-  // TODO: Implement based on some heuristics
+  // Recompute based on some heuristics
   // - Destination changed
-  // - Distance to route
+  // - Distance to current segment
   // - Wrong direcection in segment
-  static bool recompute = true;
-  if (recompute){
-    recompute = false;
+  if (!segment.isValid()){
     return true;
-  } else {
-    return false;
   }
+
+  // Compute closest distance to all line segments in the current path
+  float min_d = REROUTE_DISTANCE + 1;
+  auto path = segment.path();
+  auto cur = to_QGeoCoordinate(last_position);
+  for (size_t i = 0; i < path.size() - 1; i++){
+    auto a = path[i];
+    auto b = path[i+1];
+    min_d = std::min(min_d, minimum_distance(a, b, cur));
+  }
+  return min_d > REROUTE_DISTANCE;
 }
 
 
