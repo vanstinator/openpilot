@@ -120,7 +120,7 @@ void MapWindow::timerUpdate() {
     nav["id"] = "navLayer";
     nav["type"] = "line";
     nav["source"] = "navSource";
-    m_map->addLayer(nav, "road-label-navigation");
+    m_map->addLayer(nav, "road-intersection");
     m_map->setPaintProperty("navLayer", "line-color", QColor("#ed5e5e"));
     m_map->setPaintProperty("navLayer", "line-width", 7.5);
     m_map->setLayoutProperty("navLayer", "line-cap", "round");
