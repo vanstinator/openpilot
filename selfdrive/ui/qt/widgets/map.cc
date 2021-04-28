@@ -13,7 +13,7 @@
 #define RAD2DEG(x) ((x) * 180.0 / M_PI)
 const int PAN_TIMEOUT = 100;
 const bool DRAW_MODEL_PATH = false;
-const qreal REROUTE_DISTANCE = 100;
+const qreal REROUTE_DISTANCE = 25;
 
 // TODO: get from param
 QMapbox::Coordinate nav_destination(32.71565912901338, -117.16380347622167);
