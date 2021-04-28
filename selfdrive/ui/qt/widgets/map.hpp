@@ -1,32 +1,32 @@
 #pragma once
 
+#include <QGeoCoordinate>
+#include <QGeoManeuver>
+#include <QGeoRouteRequest>
+#include <QGeoRouteSegment>
+#include <QGeoRoutingManager>
+#include <QGeoServiceProvider>
+#include <QGestureEvent>
+#include <QHBoxLayout>
+#include <QLabel>
 #include <QMapboxGL>
-
+#include <QMouseEvent>
 #include <QOpenGLWidget>
 #include <QPropertyAnimation>
 #include <QScopedPointer>
+#include <QString>
 #include <QtGlobal>
-#include <QMouseEvent>
-#include <QWheelEvent>
-#include <QGestureEvent>
 #include <QTimer>
-#include <QGeoRouteRequest>
-#include <QGeoServiceProvider>
-#include <QGeoRoutingManager>
-#include <QGeoCoordinate>
-#include <QGeoRouteSegment>
-#include <QGeoManeuver>
+#include <QWheelEvent>
 
 #include "messaging.hpp"
 
-class MapWindow : public QOpenGLWidget
-{
-    Q_OBJECT
+class MapWindow : public QOpenGLWidget {
+  Q_OBJECT
 
 public:
   MapWindow(const QMapboxGLSettings &);
   ~MapWindow();
-
 
 private:
   void initializeGL() final;
@@ -66,4 +66,20 @@ private:
 private slots:
   void timerUpdate();
   void routeCalculated(QGeoRouteReply *reply);
+
+signals:
+  void instructionsChanged(float distance, QString text);
+};
+
+class MapInstructions : public QWidget {
+  Q_OBJECT
+
+private:
+  QLabel *instruction = nullptr;
+
+public:
+  MapInstructions(QWidget * parent=nullptr);
+
+public slots:
+  void updateInstructions(float distance, QString text);
 };

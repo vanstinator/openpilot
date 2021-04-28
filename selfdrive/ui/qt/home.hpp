@@ -94,5 +94,6 @@ protected:
 private:
   OffroadHome* home;
   QStackedLayout* layout;
-  QWidget* map;
+  QWidget* map_window;
+  QWidget* map_instructions;
 };

@@ -7,13 +7,13 @@
 #include "common/transformations/orientation.hpp"
 
 #include <QDebug>
-#include <QString>
-
 
 #define RAD2DEG(x) ((x) * 180.0 / M_PI)
 const int PAN_TIMEOUT = 100;
 const bool DRAW_MODEL_PATH = false;
 const qreal REROUTE_DISTANCE = 25;
+const float METER_2_MILE = 0.000621371;
+const float METER_2_FOOT = 3.28084;
 
 // TODO: get from param
 QMapbox::Coordinate nav_destination(32.71565912901338, -117.16380347622167);
@@ -162,8 +162,7 @@ void MapWindow::timerUpdate() {
           auto maneuver = next_segment.maneuver();
           if (maneuver.isValid()){
             float maneuver_distance = maneuver.position().distanceTo(to_QGeoCoordinate(last_position));
-
-            qDebug() << maneuver_distance << maneuver.instructionText() << maneuver.direction();
+            emit instructionsChanged(maneuver_distance, maneuver.instructionText());
             if (maneuver_distance < REROUTE_DISTANCE && maneuver_distance > last_maneuver_distance){
               segment = next_segment;
             }
@@ -334,8 +333,7 @@ void MapWindow::wheelEvent(QWheelEvent *ev) {
   ev->accept();
 }
 
-bool MapWindow::event(QEvent *event)
-{
+bool MapWindow::event(QEvent *event) {
   if (event->type() == QEvent::Gesture){
     return gestureEvent(static_cast<QGestureEvent*>(event));
   }
@@ -357,4 +355,41 @@ void MapWindow::pinchTriggered(QPinchGesture *gesture) {
     m_map->scaleBy(gesture->scaleFactor(), {width() / 2.0, height() / 2.0});
     zoom_counter = PAN_TIMEOUT;
   }
+}
+
+MapInstructions::MapInstructions(QWidget * parent) : QWidget(parent){
+
+}
+
+
+void MapInstructions::updateInstructions(float distance, QString text){
+  // TODO: Why does the map get messed up if we run this in the initializer
+  if (instruction == nullptr){
+    setFixedWidth(width());
+    QHBoxLayout *layout = new QHBoxLayout;
+    instruction = new QLabel;
+    instruction->setStyleSheet(R"(font-size: 35px;)");
+    layout->addWidget(instruction);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    setLayout(layout);
+
+    setStyleSheet(R"(
+      * {
+        color: white;
+        background-color: black;
+      }
+    )");
+  }
+
+  QString distance_str;
+  if (distance * METER_2_MILE > 0.1){
+    distance_str.setNum(distance * METER_2_MILE, 'g', 1);
+    distance_str += " miles, ";
+  } else {
+    distance_str.setNum(distance * METER_2_FOOT, 'g', 0);
+    distance_str += " ft, ";
+  }
+
+  instruction->setText("  In " + distance_str + text);
 }

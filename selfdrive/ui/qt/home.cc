@@ -6,6 +6,7 @@
 
 #include <QDateTime>
 #include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QMouseEvent>
 #include <QVBoxLayout>
 
@@ -42,7 +43,19 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
   settings.setCacheDatabasePath("/tmp/mbgl-cache.db");
   settings.setCacheDatabaseMaximumSize(20 * 1024 * 1024);
   settings.setAccessToken(token);
-  map = new MapWindow(settings);
+  map_window = new MapWindow(settings);
+  map_instructions = new MapInstructions();
+  connect(map_window, SIGNAL(instructionsChanged(float, QString)),
+          map_instructions, SLOT(updateInstructions(float, QString)));
+
+  QVBoxLayout *map_layout = new QVBoxLayout();
+  map_layout->insertWidget(-1, map_instructions, 1);
+  map_layout->insertWidget(-1, map_window, 8);
+  map_layout->setContentsMargins(0, 0, 0, 0);
+  map_layout->setSpacing(0);
+
+  QWidget *map = new QWidget();
+  map->setLayout(map_layout);
 
   // Put camera and map side by side
   QWidget* onroadWidget = new QWidget();
