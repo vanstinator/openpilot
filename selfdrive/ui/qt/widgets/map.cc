@@ -13,7 +13,6 @@ const int PAN_TIMEOUT = 100;
 const bool DRAW_MODEL_PATH = false;
 const qreal REROUTE_DISTANCE = 25;
 const float METER_2_MILE = 0.000621371;
-const float METER_2_FOOT = 3.28084;
 
 // TODO: get from param
 QMapbox::Coordinate nav_destination(32.71565912901338, -117.16380347622167);
@@ -383,13 +382,7 @@ void MapInstructions::updateInstructions(float distance, QString text){
   }
 
   QString distance_str;
-  if (distance * METER_2_MILE > 0.1){
-    distance_str.setNum(distance * METER_2_MILE, 'g', 1);
-    distance_str += " miles,\n  ";
-  } else {
-    distance_str.setNum(distance * METER_2_FOOT, 'g', 0);
-    distance_str += " ft,\n  ";
-  }
-
+  distance_str.setNum(distance * METER_2_MILE, 'f', 1);
+  distance_str += " miles,\n  ";
   instruction->setText("  In " + distance_str + text);
 }
