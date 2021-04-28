@@ -9,10 +9,19 @@
 #include <QDebug>
 #include <QString>
 
+
 #define RAD2DEG(x) ((x) * 180.0 / M_PI)
 const int PAN_TIMEOUT = 100;
+const bool DRAW_MODEL_PATH = false;
 
-QMapbox::CoordinatesCollections model_to_collection(
+// TODO: get from param
+QMapbox::Coordinate nav_destination(32.71565912901338, -117.16380347622167);
+
+static QGeoCoordinate to_QGeoCoordinate(const QMapbox::Coordinate &in) {
+  return QGeoCoordinate(in.first, in.second);
+}
+
+static QMapbox::CoordinatesCollections model_to_collection(
   const cereal::LiveLocationKalman::Measurement::Reader &calibratedOrientationECEF,
   const cereal::LiveLocationKalman::Measurement::Reader &positionECEF,
   const cereal::ModelDataV2::XYZTData::Reader &line){
@@ -40,9 +49,25 @@ QMapbox::CoordinatesCollections model_to_collection(
   return collections;
 }
 
-QMapbox::CoordinatesCollections coordinate_to_collection(QMapbox::Coordinate c){
+static QMapbox::CoordinatesCollections coordinate_to_collection(QMapbox::Coordinate c){
   QMapbox::Coordinates coordinates;
   coordinates.push_back(c);
+
+  QMapbox::CoordinatesCollection collection;
+  collection.push_back(coordinates);
+
+  QMapbox::CoordinatesCollections collections;
+  collections.push_back(collection);
+  return collections;
+}
+
+static QMapbox::CoordinatesCollections coordinate_list_to_collection(QList<QGeoCoordinate> coordinate_list) {
+  QMapbox::Coordinates coordinates;
+
+  for (auto &c : coordinate_list){
+    QMapbox::Coordinate coordinate(c.latitude(), c.longitude());
+    coordinates.push_back(coordinate);
+  }
 
   QMapbox::CoordinatesCollection collection;
   collection.push_back(coordinates);
@@ -58,6 +83,18 @@ MapWindow::MapWindow(const QMapboxGLSettings &settings) : m_settings(settings) {
   timer = new QTimer(this);
   QObject::connect(timer, SIGNAL(timeout()), this, SLOT(timerUpdate()));
 
+  // Routing
+  QVariantMap parameters;
+  parameters["mapbox.access_token"] = m_settings.accessToken();
+
+  geoservice_provider = new QGeoServiceProvider("mapbox", parameters);
+  routing_manager = geoservice_provider->routingManager();
+  if (routing_manager == nullptr){
+    qDebug() << geoservice_provider->errorString();
+    assert(routing_manager);
+  }
+  connect(routing_manager, SIGNAL(finished(QGeoRouteReply*)), this, SLOT(routeCalculated(QGeoRouteReply*)));
+
   grabGesture(Qt::GestureType::PinchGesture);
 }
 
@@ -68,8 +105,6 @@ MapWindow::~MapWindow() {
 void MapWindow::timerUpdate() {
   // This doesn't work from initializeGL
   if (!m_map->layerExists("modelPathLayer")){
-    m_map->addImage("label-arrow", QImage("../assets/images/triangle.svg"));
-
     QVariantMap modelPath;
     modelPath["id"] = "modelPathLayer";
     modelPath["type"] = "line";
@@ -78,6 +113,16 @@ void MapWindow::timerUpdate() {
     m_map->setPaintProperty("modelPathLayer", "line-color", QColor("red"));
     m_map->setPaintProperty("modelPathLayer", "line-width", 5.0);
     m_map->setLayoutProperty("modelPathLayer", "line-cap", "round");
+  }
+  if (!m_map->layerExists("navLayer")){
+    QVariantMap nav;
+    nav["id"] = "navLayer";
+    nav["type"] = "line";
+    nav["source"] = "navSource";
+    m_map->addLayer(nav, "road-label-navigation");
+    m_map->setPaintProperty("navLayer", "line-color", QColor("#ed5e5e"));
+    m_map->setPaintProperty("navLayer", "line-width", 7.5);
+    m_map->setLayoutProperty("navLayer", "line-cap", "round");
   }
   if (!m_map->layerExists("carPosLayer")){
     m_map->addImage("label-arrow", QImage("../assets/images/triangle.svg"));
@@ -104,6 +149,11 @@ void MapWindow::timerUpdate() {
     auto coordinate = QMapbox::Coordinate(pos.getValue()[0], pos.getValue()[1]);
 
     if (location.getStatus() == cereal::LiveLocationKalman::Status::VALID){
+      last_position = coordinate;
+
+      if (shouldRecompute()){
+        calculateRoute(nav_destination);
+      }
 
       if (pan_counter == 0){
         m_map->setCoordinate(coordinate);
@@ -113,7 +163,8 @@ void MapWindow::timerUpdate() {
       }
 
       if (zoom_counter == 0){
-        m_map->setZoom(19 - std::min(3.0f, velocity_filter.update(velocity) / 10)); // Scale zoom between 16 and 19 based on speed
+        // Scale zoom between 16 and 19 based on speed
+        m_map->setZoom(19 - std::min(3.0f, velocity_filter.update(velocity) / 10));
       } else {
         zoom_counter--;
       }
@@ -127,12 +178,14 @@ void MapWindow::timerUpdate() {
       m_map->updateSource("carPosSource", carPosSource);
 
       // Update model path
-      auto path_points = model_to_collection(location.getCalibratedOrientationECEF(), location.getPositionECEF(), model.getPosition());
-      QMapbox::Feature feature2(QMapbox::Feature::LineStringType, path_points, {}, {});
-      QVariantMap modelPathSource;
-      modelPathSource["type"] = "geojson";
-      modelPathSource["data"] = QVariant::fromValue<QMapbox::Feature>(feature2);
-      m_map->updateSource("modelPathSource", modelPathSource);
+      if (DRAW_MODEL_PATH) {
+        auto path_points = model_to_collection(location.getCalibratedOrientationECEF(), location.getPositionECEF(), model.getPosition());
+        QMapbox::Feature feature2(QMapbox::Feature::LineStringType, path_points, {}, {});
+        QVariantMap modelPathSource;
+        modelPathSource["type"] = "geojson";
+        modelPathSource["data"] = QVariant::fromValue<QMapbox::Feature>(feature2);
+        m_map->updateSource("modelPathSource", modelPathSource);
+      }
     }
     update();
   }
@@ -142,9 +195,8 @@ void MapWindow::timerUpdate() {
 void MapWindow::initializeGL() {
   m_map.reset(new QMapboxGL(nullptr, m_settings, size(), 1));
 
-  // Get from last gps position param
-  auto coordinate = QMapbox::Coordinate(37.7393118509158, -122.46471285025565);
-  m_map->setCoordinateZoom(coordinate, 16);
+  // TODO: Get from last gps position param
+  m_map->setCoordinateZoom(last_position, 18);
   m_map->setStyleUrl("mapbox://styles/pd0wm/cknuhcgvr0vs817o1akcx6pek"); // Larger fonts
 
   connect(m_map.data(), SIGNAL(needsRendering()), this, SLOT(update()));
@@ -157,6 +209,44 @@ void MapWindow::paintGL() {
   m_map->render();
 }
 
+
+void MapWindow::calculateRoute(QMapbox::Coordinate destination) {
+  QGeoRouteRequest request(to_QGeoCoordinate(last_position), to_QGeoCoordinate(destination));
+  routing_manager->calculateRoute(request);
+}
+
+void MapWindow::routeCalculated(QGeoRouteReply *reply) {
+  qDebug() << "route update";
+  if (reply->routes().size() != 0) {
+    route = reply->routes().at(0);
+
+    auto route_points = coordinate_list_to_collection(route.path());
+    QMapbox::Feature feature(QMapbox::Feature::LineStringType, route_points, {}, {});
+    QVariantMap navSource;
+    navSource["type"] = "geojson";
+    navSource["data"] = QVariant::fromValue<QMapbox::Feature>(feature);
+    m_map->updateSource("navSource", navSource);
+  }
+
+  reply->deleteLater();
+}
+
+bool MapWindow::shouldRecompute(){
+  // TODO: Implement based on some heuristics
+  // - Destination changed
+  // - Distance to route
+  // - Wrong direcection in segment
+  static bool recompute = true;
+  if (recompute){
+    recompute = false;
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+// Events
 void MapWindow::mousePressEvent(QMouseEvent *ev) {
   m_lastPos = ev->localPos();
   ev->accept();
