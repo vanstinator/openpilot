@@ -31,6 +31,7 @@ public:
 private:
   void initializeGL() final;
   void paintGL() final;
+  void resizeGL(int w, int h) override;
 
   QMapboxGLSettings m_settings;
   QScopedPointer<QMapboxGL> m_map;
@@ -57,6 +58,7 @@ private:
   QGeoRoutingManager *routing_manager;
   QGeoRoute route;
   QGeoRouteSegment segment;
+  QWidget* map_instructions;
   QMapbox::Coordinate last_position = QMapbox::Coordinate(37.7393118509158, -122.46471285025565);
   double last_maneuver_distance = 1000;
   void calculateRoute(QMapbox::Coordinate destination);

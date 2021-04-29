@@ -44,18 +44,6 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
   settings.setCacheDatabaseMaximumSize(20 * 1024 * 1024);
   settings.setAccessToken(token);
   map_window = new MapWindow(settings);
-  map_instructions = new MapInstructions();
-  connect(map_window, SIGNAL(instructionsChanged(float, QString)),
-          map_instructions, SLOT(updateInstructions(float, QString)));
-
-  QVBoxLayout *map_layout = new QVBoxLayout();
-  map_layout->insertWidget(-1, map_instructions, 1);
-  map_layout->insertWidget(-1, map_window, 8);
-  map_layout->setContentsMargins(0, 0, 0, 0);
-  map_layout->setSpacing(0);
-
-  QWidget *map = new QWidget();
-  map->setLayout(map_layout);
 
   // Put camera and map side by side
   QWidget* onroadWidget = new QWidget();
@@ -63,7 +51,7 @@ HomeWindow::HomeWindow(QWidget* parent) : QWidget(parent) {
   onRoadLayout->setContentsMargins(0, 0, 0, 0);
   onRoadLayout->setSpacing(0);
   onRoadLayout->addWidget(glWindow);
-  onRoadLayout->addWidget(map);
+  onRoadLayout->addWidget(map_window);
   onroadWidget->setLayout(onRoadLayout);
 
   layout->addWidget(onroadWidget);

@@ -83,6 +83,13 @@ MapWindow::MapWindow(const QMapboxGLSettings &settings) : m_settings(settings) {
   timer = new QTimer(this);
   QObject::connect(timer, SIGNAL(timeout()), this, SLOT(timerUpdate()));
 
+  // Instructions
+  map_instructions = new MapInstructions(this);
+  connect(this, SIGNAL(instructionsChanged(float, QString)),
+          map_instructions, SLOT(updateInstructions(float, QString)));
+  map_instructions->setFixedWidth(width());
+  map_instructions->setFixedHeight(150);
+
   // Routing
   QVariantMap parameters;
   parameters["mapbox.access_token"] = m_settings.accessToken();
@@ -207,6 +214,11 @@ void MapWindow::timerUpdate() {
     update();
   }
 
+}
+
+void MapWindow::resizeGL(int w, int h) {
+  qDebug() << "resize map " << w << "x" << h;
+  map_instructions->setFixedWidth(width());
 }
 
 void MapWindow::initializeGL() {
@@ -357,30 +369,25 @@ void MapWindow::pinchTriggered(QPinchGesture *gesture) {
 }
 
 MapInstructions::MapInstructions(QWidget * parent) : QWidget(parent){
+  QHBoxLayout *layout = new QHBoxLayout;
+  instruction = new QLabel;
+  instruction->setStyleSheet(R"(font-size: 40px;)");
+  layout->addWidget(instruction);
+  layout->setContentsMargins(0, 0, 0, 0);
+  layout->setSpacing(0);
+  setLayout(layout);
+
+  setStyleSheet(R"(
+    * {
+      color: white;
+      background-color: black;
+    }
+  )");
 
 }
 
 
 void MapInstructions::updateInstructions(float distance, QString text){
-  // TODO: Why does the map get messed up if we run this in the initializer
-  if (instruction == nullptr){
-    setFixedWidth(width());
-    QHBoxLayout *layout = new QHBoxLayout;
-    instruction = new QLabel;
-    instruction->setStyleSheet(R"(font-size: 40px;)");
-    layout->addWidget(instruction);
-    layout->setContentsMargins(0, 0, 0, 0);
-    layout->setSpacing(0);
-    setLayout(layout);
-
-    setStyleSheet(R"(
-      * {
-        color: white;
-        background-color: black;
-      }
-    )");
-  }
-
   QString distance_str;
   distance_str.setNum(distance * METER_2_MILE, 'f', 1);
   distance_str += " miles,\n  ";
