@@ -13,6 +13,7 @@ const int PAN_TIMEOUT = 100;
 const bool DRAW_MODEL_PATH = false;
 const qreal REROUTE_DISTANCE = 25;
 const float METER_2_MILE = 0.000621371;
+const float METER_2_FOOT = 3.28084;
 
 // TODO: get from param
 // QMapbox::Coordinate nav_destination(32.71565912901338, -117.16380347622167);
@@ -181,10 +182,13 @@ void MapWindow::timerUpdate() {
         auto cur_maneuver = segment.maneuver();
         auto attrs = cur_maneuver.extendedAttributes();
         if (cur_maneuver.isValid() && attrs.contains("mapbox.banner_instructions")){
-          auto banner = attrs["mapbox.banner_instructions"].toList()[0].toMap();
 
-          // TOOD: Only show when traveled distanceAlongGeometry since the start
-          emit instructionsChanged(banner);
+          auto banner = attrs["mapbox.banner_instructions"].toList();
+          if (banner.size()){
+            // TOOD: Only show when traveled distanceAlongGeometry since the start
+            emit instructionsChanged(banner[0].toMap());
+          }
+
         }
 
         auto next_segment = segment.nextRouteSegment();
@@ -442,8 +446,17 @@ MapInstructions::MapInstructions(QWidget * parent) : QWidget(parent){
 
 void MapInstructions::updateDistance(float d){
   QString distance_str;
-  distance_str.setNum(d * METER_2_MILE, 'f', 1);
-  distance_str += " miles";
+
+  float miles = d * METER_2_MILE;
+  float feet = d * METER_2_FOOT;
+
+  if (feet > 500){
+    distance_str.setNum(miles, 'f', 1);
+    distance_str += " miles";
+  } else {
+    distance_str.setNum(50 * int(feet / 50));
+    distance_str += " feet";
+  }
   distance->setText(distance_str);
 }
 
