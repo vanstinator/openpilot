@@ -167,7 +167,7 @@ void MapWindow::timerUpdate() {
     auto orientation = location.getOrientationNED();
 
     float velocity = location.getVelocityCalibrated().getValue()[0];
-    static FirstOrderFilter velocity_filter(velocity, 30, 0.1);
+    static FirstOrderFilter velocity_filter(velocity, 15, 0.1);
 
     auto coordinate = QMapbox::Coordinate(pos.getValue()[0], pos.getValue()[1]);
 
@@ -203,8 +203,6 @@ void MapWindow::timerUpdate() {
             }
             last_maneuver_distance = next_maneuver_distance;
           }
-        } else {
-          qDebug() << "End of route";
         }
       }
 
