@@ -15,8 +15,7 @@ const qreal REROUTE_DISTANCE = 25;
 const float METER_2_MILE = 0.000621371;
 
 // TODO: get from param
-//QMapbox::Coordinate nav_destination(32.71565912901338, -117.16380347622167);
-// QMapbox::Coordinate nav_destination(32.764002, -117.225834);
+// QMapbox::Coordinate nav_destination(32.71565912901338, -117.16380347622167);
 QMapbox::Coordinate nav_destination(51.997281919866296, 4.37224379909209);
 
 static void clearLayout(QLayout* layout) {
@@ -104,7 +103,6 @@ MapWindow::MapWindow(const QMapboxGLSettings &settings) : m_settings(settings) {
   connect(this, SIGNAL(distanceChanged(float)),
           map_instructions, SLOT(updateDistance(float)));
   map_instructions->setFixedWidth(width());
-  // map_instructions->setFixedHeight(150);
 
   // Routing
   QVariantMap parameters;
@@ -414,6 +412,7 @@ MapInstructions::MapInstructions(QWidget * parent) : QWidget(parent){
 
     primary = new QLabel;
     primary->setStyleSheet(R"(font-size: 50px;)");
+    primary->setWordWrap(true);
     layout->addWidget(primary);
 
     secondary = new QLabel;
@@ -423,9 +422,9 @@ MapInstructions::MapInstructions(QWidget * parent) : QWidget(parent){
     lane_layout = new QHBoxLayout;
     layout->addLayout(lane_layout);
 
-    QWidget * w = new QWidget;
-    w->setLayout(layout);
-    layout_outer->addWidget(w);
+    QWidget * w2 = new QWidget;
+    w2->setLayout(layout);
+    layout_outer->addWidget(w2);
   }
 
   setLayout(layout_outer);
@@ -508,12 +507,12 @@ void MapInstructions::updateInstructions(QMap<QString, QVariant> banner){
 
         // TODO: Make more images based on active direction and combined directions
         QString fn = "../assets/navigation/direction_";
-        if (straight) {
-          fn += "turn_straight";
-        } else if (left) {
+        if (left) {
           fn += "turn_left";
         } else if (right){
           fn += "turn_right";
+        } else if (straight) {
+          fn += "turn_straight";
         }
 
         QPixmap pix(fn + ".png");
@@ -525,9 +524,8 @@ void MapInstructions::updateInstructions(QMap<QString, QVariant> banner){
     }
   }
 
-
-  resize(width(), has_lanes ? 350 : 250);
-
   primary->setText(primary_str);
+  secondary->setVisible(secondary_str.length() > 0);
   secondary->setText(secondary_str);
+  adjustSize();
 }
