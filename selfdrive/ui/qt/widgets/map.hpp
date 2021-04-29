@@ -8,6 +8,7 @@
 #include <QGeoServiceProvider>
 #include <QGestureEvent>
 #include <QHBoxLayout>
+#include <QVBoxLayout>
 #include <QLabel>
 #include <QMapboxGL>
 #include <QMouseEvent>
@@ -18,6 +19,8 @@
 #include <QtGlobal>
 #include <QTimer>
 #include <QWheelEvent>
+#include <QMap>
+#include <QPixmap>
 
 #include "messaging.hpp"
 
@@ -70,18 +73,23 @@ private slots:
   void routeCalculated(QGeoRouteReply *reply);
 
 signals:
-  void instructionsChanged(float distance, QString text);
+  void distanceChanged(float distance);
+  void instructionsChanged(QMap<QString, QVariant> banner);
 };
 
 class MapInstructions : public QWidget {
   Q_OBJECT
 
 private:
-  QLabel *instruction = nullptr;
+  QLabel *distance;
+  QLabel *primary;
+  QLabel *secondary;
+  QLabel *icon_01;
 
 public:
   MapInstructions(QWidget * parent=nullptr);
 
 public slots:
-  void updateInstructions(float distance, QString text);
+  void updateDistance(float d);
+  void updateInstructions(QMap<QString, QVariant> banner);
 };
