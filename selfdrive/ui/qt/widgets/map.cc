@@ -422,7 +422,9 @@ MapInstructions::MapInstructions(QWidget * parent) : QWidget(parent){
     lane_layout = new QHBoxLayout;
     layout->addLayout(lane_layout);
 
-    layout_outer->addLayout(layout);
+    QWidget * w = new QWidget;
+    w->setLayout(layout);
+    layout_outer->addWidget(w);
   }
 
   setLayout(layout_outer);
