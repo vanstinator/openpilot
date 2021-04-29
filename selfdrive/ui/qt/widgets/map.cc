@@ -15,7 +15,21 @@ const qreal REROUTE_DISTANCE = 25;
 const float METER_2_MILE = 0.000621371;
 
 // TODO: get from param
-QMapbox::Coordinate nav_destination(32.71565912901338, -117.16380347622167);
+//QMapbox::Coordinate nav_destination(32.71565912901338, -117.16380347622167);
+// QMapbox::Coordinate nav_destination(32.764002, -117.225834);
+QMapbox::Coordinate nav_destination(51.997281919866296, 4.37224379909209);
+
+static void clearLayout(QLayout* layout) {
+  while (QLayoutItem* item = layout->takeAt(0)) {
+    if (QWidget* widget = item->widget()) {
+      widget->deleteLater();
+    }
+    if (QLayout* childLayout = item->layout()) {
+      clearLayout(childLayout);
+    }
+    delete item;
+  }
+}
 
 static QGeoCoordinate to_QGeoCoordinate(const QMapbox::Coordinate &in) {
   return QGeoCoordinate(in.first, in.second);
@@ -95,6 +109,7 @@ MapWindow::MapWindow(const QMapboxGLSettings &settings) : m_settings(settings) {
   // Routing
   QVariantMap parameters;
   parameters["mapbox.access_token"] = m_settings.accessToken();
+  parameters["mapbox.user_agent"] = "mapbox-maps-android";
 
   geoservice_provider = new QGeoServiceProvider("mapbox", parameters);
   routing_manager = geoservice_provider->routingManager();
@@ -392,11 +407,9 @@ MapInstructions::MapInstructions(QWidget * parent) : QWidget(parent){
   {
     QVBoxLayout *layout = new QVBoxLayout;
 
-
     distance = new QLabel;
     distance->setStyleSheet(R"(font-size: 75px;)");
     layout->addWidget(distance);
-    layout_outer->addLayout(layout);
 
     primary = new QLabel;
     primary->setStyleSheet(R"(font-size: 50px;)");
@@ -405,6 +418,11 @@ MapInstructions::MapInstructions(QWidget * parent) : QWidget(parent){
     secondary = new QLabel;
     secondary->setStyleSheet(R"(font-size: 40px;)");
     layout->addWidget(secondary);
+
+    lane_layout = new QHBoxLayout;
+    layout->addLayout(lane_layout);
+
+    layout_outer->addLayout(layout);
   }
 
   setLayout(layout_outer);
@@ -448,22 +466,64 @@ void MapInstructions::updateInstructions(QMap<QString, QVariant> banner){
   }
 
   // Parse components (e.g. lanes, exit number)
-  // auto components = p["components"].toList();
-  // for (auto &c : components) {
-  //   auto cc = c.toMap();
-  //   qDebug() << cc["type"].toString() << cc["text"].toString();
-  // }
+  auto components = p["components"].toList();
+  QString icon_fn;
+  for (auto &c : components) {
+    auto cc = c.toMap();
+    if (cc["type"].toString() == "icon"){
+      icon_fn = cc["imageBaseURL"].toString() + "@3x.png";
+    }
+  }
 
   if (banner.contains("secondary")){
     auto s = banner["secondary"].toMap();
     secondary_str += s["text"].toString();
-
-    // auto components = s["components"].toList();
-    // for (auto &c : components) {
-    //   auto cc = c.toMap();
-    //   qDebug() << " " << cc["type"].toString() << cc["text"].toString();
-    // }
   }
+
+  clearLayout(lane_layout);
+  bool has_lanes = false;
+
+  if (banner.contains("sub")){
+    auto s = banner["sub"].toMap();
+    auto components = s["components"].toList();
+    for (auto &c : components) {
+      auto cc = c.toMap();
+      if (cc["type"].toString() == "lane"){
+        has_lanes = true;
+
+        bool left = false;
+        bool straight = false;
+        bool right = false;
+        bool active = cc["active"].toBool();
+
+        for (auto &dir : cc["directions"].toList()){
+          auto d = dir.toString();
+          left |= d.contains("left");
+          straight |= d.contains("straight");
+          right |= d.contains("right");
+        }
+
+        // TODO: Make more images based on active direction and combined directions
+        QString fn = "../assets/navigation/direction_";
+        if (straight) {
+          fn += "turn_straight";
+        } else if (left) {
+          fn += "turn_left";
+        } else if (right){
+          fn += "turn_right";
+        }
+
+        QPixmap pix(fn + ".png");
+        auto icon = new QLabel;
+        icon->setPixmap(pix.scaledToWidth(active ? 125 : 75, Qt::SmoothTransformation));
+        icon->setSizePolicy(QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
+        lane_layout->addWidget(icon);
+      }
+    }
+  }
+
+
+  resize(width(), has_lanes ? 350 : 250);
 
   primary->setText(primary_str);
   secondary->setText(secondary_str);

@@ -85,6 +85,7 @@ private:
   QLabel *primary;
   QLabel *secondary;
   QLabel *icon_01;
+  QHBoxLayout *lane_layout;
 
 public:
   MapInstructions(QWidget * parent=nullptr);
